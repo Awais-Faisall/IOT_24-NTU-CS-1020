@@ -1,19 +1,27 @@
-#include <Arduino.h>
+// Week3-Lecture1
+// Interrupt (External -Button)
+// Embedded IoT System Fall-2025
+
+// Name: Awais Faisal                 Reg#: 24-NTU-CS-FL-1020
+
+#include<Arduino.h>
+
+
+const int buttonPin = 32;
+const int ledPin = 4;
+volatile bool ledState = LOW;
+
+void IRAM_ATTR handleButton() {
+  ledState = !ledState;
+  digitalWrite(ledPin, ledState);
+}
 
 void setup() {
-  pinMode(2, OUTPUT);
-  
-  // Initialize serial communication at 115200 baud
-  Serial.begin(115200);
-  Serial.println("ESP32 Simulation Started!");
+  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(buttonPin), handleButton, FALLING);
 }
 
 void loop() {
-  digitalWrite(2, HIGH);   
-  Serial.println("LED State: ON");
-  delay(1000);             
-  
-  digitalWrite(2, LOW);    
-  Serial.println("LED State: OFF");
-  delay(1000);             
+  // main loop free for other tasks
 }
