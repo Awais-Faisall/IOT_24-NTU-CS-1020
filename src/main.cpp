@@ -1,27 +1,38 @@
-// Week3-Lecture1
-// Interrupt (External -Button)
-// Embedded IoT System Fall-2025
+// Week3-Lecture2
+// Timer Interrupt (Internal)
+// Embedded IoT System Fall-2026
+// Name: ZAKARIYA ALTAF
+// Reg#: 24_NTU_CS_FL_1033
 
-// Name: Awais Faisal                 Reg#: 24-NTU-CS-FL-1020
+#include <Arduino.h>
 
-#include<Arduino.h>
+#define LED 2
 
+hw_timer_t *My_timer = NULL;
 
-const int buttonPin = 32;
-const int ledPin = 4;
-volatile bool ledState = LOW;
-
-void IRAM_ATTR handleButton() {
-  ledState = !ledState;
-  digitalWrite(ledPin, ledState);
+void IRAM_ATTR onTimer()
+{
+    digitalWrite(LED, !digitalRead(LED));
 }
 
-void setup() {
-  pinMode(buttonPin, INPUT_PULLUP);
-  pinMode(ledPin, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), handleButton, FALLING);
+void setup()
+{
+    pinMode(LED, OUTPUT);
+
+    // Timer 0, 80 MHz / 80 = 1 MHz
+    // 1 tick = 1 microsecond
+    My_timer = timerBegin(0, 80, true);
+
+    // Attach interrupt
+    timerAttachInterrupt(My_timer, &onTimer, true);
+
+    // Generate interrupt every 1,000,000 microseconds = 1 second
+    timerAlarmWrite(My_timer, 1000000, true);
+
+    // Enable timer alarm
+    timerAlarmEnable(My_timer);
 }
 
-void loop() {
-  // main loop free for other tasks
+void loop()
+{
 }
