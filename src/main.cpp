@@ -1,8 +1,8 @@
 // Week3-Lecture2
 // Timer Interrupt (Internal)
 // Embedded IoT System Fall-2026
-// Name: ZAKARIYA ALTAF
-// Reg#: 24_NTU_CS_FL_1033
+// Name: Awais Faisal
+// Reg#: 24_NTU_CS_FL_1020
 
 #include <Arduino.h>
 
