@@ -3,33 +3,93 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define LDR_PIN 34
-#define SDA_PIN 21
-#define SCL_PIN 22
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
+#define OLED_W      128
+#define OLED_H      64
+#define OLED_RESET  -1
+#define OLED_ADDR   0x3C
+Adafruit_SSD1306 oled(OLED_W, OLED_H, &Wire, OLED_RESET);
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+const uint8_t PIN_RED  = 18;
+const uint8_t PIN_BLUE = 19;
+const uint8_t CH_RED  = 0;
+const uint8_t CH_BLUE = 2;
+const uint32_t FREQ_RED  = 1000;
+const uint32_t FREQ_BLUE = 5000;
+const uint8_t  RES_BITS  = 8;
+const int      DUTY_MAX  = (1 << RES_BITS) - 1;
+const int      STEP_MS   = 10;
+
+int dutyRed  = 0;
+int dutyBlue = 0;
+
+void showOLED() {
+  int pctRed  = dutyRed  * 100 / DUTY_MAX;
+  int pctBlue = dutyBlue * 100 / DUTY_MAX;
+
+  oled.clearDisplay();
+  oled.setTextColor(SSD1306_WHITE);
+  oled.setTextSize(1);
+
+  oled.setCursor(0, 0);
+  oled.println("PWM MONITOR");
+
+  oled.setCursor(0, 18);
+  oled.print("LED1: ");
+  oled.print(pctRed);
+  oled.print("% F:");
+  oled.print(FREQ_RED);
+  oled.println("Hz");
+
+  oled.setCursor(0, 38);
+  oled.print("LED2: ");
+  oled.print(pctBlue);
+  oled.print("% F:");
+  oled.print(FREQ_BLUE);
+  oled.println("Hz");
+
+  oled.display();
+}
+
+void setPwm(int d) {
+  dutyRed  = d;
+  dutyBlue = d;
+  ledcWrite(CH_RED, dutyRed);
+  ledcWrite(CH_BLUE, dutyBlue);
+  showOLED();
+  delay(STEP_MS);
+}
 
 void setup() {
   Serial.begin(115200);
-  Wire.begin(SDA_PIN, SCL_PIN);
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
+  Wire.begin(21, 22);
+
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+    Serial.println("OLED initialization failed!");
+    while (true) { delay(1000); }
+  }
+
+  double realRed  = ledcSetup(CH_RED,  FREQ_RED,  RES_BITS);
+  double realBlue = ledcSetup(CH_BLUE, FREQ_BLUE, RES_BITS);
+  if (realRed == 0 || realBlue == 0) {
+    Serial.println("ERROR: LEDC setup failed");
+    while (true) { delay(1000); }
+  }
+
+  ledcAttachPin(PIN_RED,  CH_RED);
+  ledcAttachPin(PIN_BLUE, CH_BLUE);
+
+  Serial.println("Dual LED PWM + OLED Started");
+  Serial.print("LED 1 Frequency: ");
+  Serial.print(realRed);
+  Serial.println(" Hz");
+  Serial.print("LED 2 Frequency: ");
+  Serial.print(realBlue);
+  Serial.println(" Hz");
+
+  setPwm(0);
 }
 
 void loop() {
-  int adcValue = analogRead(LDR_PIN);
-  float voltage = (adcValue / 4095.0) * 3.3;
-
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0,10);
-  display.print("LDR ADC: "); display.println(adcValue);
-  display.print("Voltage: "); display.print(voltage, 2); display.println(" V");
-  display.display();
-
-  Serial.printf("ADC: %d  |  Voltage: %.2f V\n", adcValue, voltage);
-  delay(1000);
+  for (int d = 0; d <= DUTY_MAX; d++)  { setPwm(d); }
+  for (int d = DUTY_MAX; d >= 0; d--)  { setPwm(d); }
 }
